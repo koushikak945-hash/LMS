@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS Student Registration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 25px;
+            background: #f2f6fc;
+        }
+        h1, h3 { color: #174ea6; }
+        form {
+            background: white;
+            padding: 20px;
+            max-width: 450px;
+            border-radius: 10px;
+        }
+        input, select {
+            width: 95%;
+            padding: 9px;
+            margin-top: 6px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px 3px;
+            background: #174ea6;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        table {
+            border-collapse: collapse;
+            background: white;
+            width: 100%;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #888;
+            padding: 8px;
+            text-align: left;
+        }
+        th { background: #dce8ff; }
+    </style>
+</head>
+<body>
+
+    <h1>Learning Management System</h1>
+    <h3>Student Registration Form</h3>
+
+    <form id="userForm">
+        <label>Student Name:</label>
+        <input type="text" id="name" required><br><br>
+
+        <label>Email:</label>
+        <input type="email" id="email" required><br><br>
+
+        <label>Register Number:</label>
+        <input type="text" id="regno" required><br><br>
+
+        <label>Course Name:</label>
+        <input type="text" id="course" required><br><br>
+
+        <label>Department:</label>
+        <input type="text" id="department" required><br><br>
+
+        <label>Year:</label>
+        <select id="year" required>
+            <option value="">Select Year</option>
+            <option>1st Year</option>
+            <option>2nd Year</option>
+            <option>3rd Year</option>
+            <option>4th Year</option>
+        </select><br><br>
+
+        <button type="submit">Add Student</button>
+        <button type="reset">Clear Form</button>
+    </form>
+
+    <br>
+    <button type="button" id="viewBtn">View Stored Students</button>
+
+    <h3>Registered Students</h3>
+    <div id="dataContainer"></div>
+    <p id="status"></p>
+
+    <script type="module">
+        import { initializeApp }
+        from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+
+        import {
+            getDatabase, ref, push, set, get
+        } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCU1UXqCXQk6Gik-xoE9WYMuWl7qo18WCw",
+            authDomain: "lms-project-f5c96.firebaseapp.com",
+            databaseURL: "https://lms-project-f5c96-default-rtdb.firebaseio.com/",              
+            projectId:  "lms-project-f5c96",
+            storageBucket: "lms-project-f5c96.firebasestorage.app",
+            messagingSenderId: "972781183437",
+            appId: "1:972781183437:web:224b2ffc23962f2615e484",
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        const form = document.getElementById("userForm");
+        const status = document.getElementById("status");
+        const dataContainer = document.getElementById("dataContainer");
+
+        // Add Multiple Students
+        form.addEventListener("submit", async function(e) {
+            e.preventDefault();
+
+            const student = {
+                name: document.getElementById("name").value.trim(),
+                email: document.getElementById("email").value.trim(),
+                regno: document.getElementById("regno").value.trim(),
+                course: document.getElementById("course").value.trim(),
+                department: document.getElementById("department").value.trim(),
+                year: document.getElementById("year").value
+            };
+
+            try {
+                const studentRef = push(ref(database, "students"));
+                await set(studentRef, student);
+
+                status.textContent = "Student added successfully!";
+                form.reset();
+            } catch (error) {
+                status.textContent = "Error saving student: " + error.message;
+            }
+        });
+
+        // View All Students
+        document.getElementById("viewBtn").addEventListener("click", async function() {
+            dataContainer.replaceChildren();
+            status.textContent = "Loading students...";
+
+            try {
+                const snapshot = await get(ref(database, "students"));
+
+                if (!snapshot.exists()) {
+                    status.textContent = "No students found.";
+                    return;
+                }
+
+                const table = document.createElement("table");
+                const header = table.insertRow();
+
+                [
+                    "Student Name", "Email", "Register Number",
+                    "Course", "Department", "Year"
+                ].forEach(function(title) {
+                    const th = document.createElement("th");
+                    th.textContent = title;
+                    header.appendChild(th);
+                });
+
+                snapshot.forEach(function(childSnapshot) {
+                    const student = childSnapshot.val();
+                    const row = table.insertRow();
+
+                    [
+                        student.name, student.email, student.regno,
+                        student.course, student.department, student.year
+                    ].forEach(function(value) {
+                        const cell = row.insertCell();
+                        cell.textContent = value || "";
+                    });
+                });
+
+                dataContainer.appendChild(table);
+                status.textContent = "All students loaded successfully!";
+            } catch (error) {
+                status.textContent = "Error loading students: " + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
